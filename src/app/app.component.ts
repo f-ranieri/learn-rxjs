@@ -1,9 +1,9 @@
-import { Component } from '@angular/core';
-import { Observable, pipe } from 'rxjs';
-import { delay, filter, map, reduce, concatMap, concat, catchError, flatMap } from 'rxjs/operators';
-import { forkJoin } from 'rxjs/observable/forkJoin';
-import { of } from 'rxjs/observable/of';
-import { mapTo } from 'rxjs/operator/mapTo';
+import { Component } from "@angular/core";
+import { Observable, pipe } from "rxjs";
+import { delay, filter, map, reduce, concatMap, concat, catchError, flatMap } from "rxjs/operators";
+import { forkJoin } from "rxjs/observable/forkJoin";
+import { of } from "rxjs/observable/of";
+import { mapTo } from "rxjs/operator/mapTo";
 
 @Component({
   selector: "app-root",
@@ -11,83 +11,61 @@ import { mapTo } from 'rxjs/operator/mapTo';
   styleUrls: ["./app.component.css"]
 })
 export class AppComponent {
+  saveItemRequest1: SaveItemRequest = { id: "1", name: "apple" };
+
+  saveItemRequest2: SaveItemRequest = { id: "0", name: "banana" };
+
   constructor() {}
 
   start() {
-    this.saveOrganizzatore()
+    this.saveItem(this.saveItemRequest1)
+      .catch(error => this.handleFailResult(this.saveItemRequest1, error))
       .pipe(
-        concatMap(
-          result => {
-            this.handleSuccessfulResult(result);
-            return this.saveOrganizzatoreAssociato();
-          }
-        ),
-        catchError(val => of(`I caught: ${val}`))
-        ,
         concatMap(result => {
-          this.handleSuccessfulResult(result);
-          return this.saveDocuments();
+          this.handleSuccessfulResult(this.saveItemRequest1, result);
+          return this.saveItem(this.saveItemRequest2).catch(error => this.handleFailResult(this.saveItemRequest2, error));
         }),
-        map(result => {
-          this.handleSuccessfulResults(result);
+        concatMap(result => {
+          this.handleSuccessfulResult(this.saveItemRequest2, result);
+          return this.saveMultipleItems();
         }),
+        map(console.table)
       )
       .subscribe();
   }
 
-  saveOrganizzatore(): Observable<string> {
-    const i = Math.floor(Math.random() * Math.floor(10));
-    if (i < 5) {
-      return Observable.of("Organizzatore Salvato" + i).pipe(delay(500));
+  saveItem(request: SaveItemRequest): Observable<any> {
+    if (request.id != "0") {
+      const response = new SaveItemResponse();
+      response.message = `${request.name} saved!`;
+      return Observable.of(response).pipe(delay(1000));
     } else {
-      return Observable.throw(new Error("oops!" + i));
+      return Observable.throw(new Error(`${request.name} not saved!`));
     }
   }
 
-  handleSuccessfulResult(result?: string | {}) {
-    if (result) {
-      console.log(result);
-    }
+  handleFailResult(request: SaveItemRequest, error: any): Observable<{}> {
+    console.log(`${request.id} failed with error: ${error}`);
+    return Observable.empty();
   }
 
-  handleSaveOrganizzatoreError(result: string) {
-    console.log(result);
+  handleSuccessfulResult(request: SaveItemRequest, result: string | {}) {
+    console.log(`${request.id} result: `, result);
   }
 
-  handleSuccessfulResults(results: string[]) {
-    console.log(results);
-  }
-
-  saveOrganizzatoreAssociato(): Observable<string> {
-    const i = Math.floor(Math.random() * Math.floor(10));
-    if (i < 5) {
-      return Observable.of("Organizzatore Associato Salvato" + i).pipe(
-        delay(500)
-      );
-    } else {
-      return Observable.throw(new Error("oops!" + i));
-    }
-  }
-
-  saveDocument(): Observable<string> {
-    const i = Math.floor(Math.random() * Math.floor(10));
-    if (i < 5) {
-      return Observable.of("Documento Salvato" + i).pipe(delay(i * 100));
-    } else {
-      return Observable.throw(new Error("oops!" + i));
-    }
-  }
-
-  saveDocuments(): Observable<string[]> {
+  saveMultipleItems(): Observable<string[]> {
     return Observable.forkJoin([
-      this.saveDocument().catch(error => of(error)),
-      this.saveDocument().catch(error => of(error))
+      this.saveItem({ id: "3", name: "pear" }).catch(error => of(error)),
+      this.saveItem({ id: "4", name: "cherry" }).catch(error => of(error))
     ]);
   }
 }
 
-class SavingContext {
+class SaveItemRequest {
+  id: string;
+  name: string;
+}
 
-
-
+class SaveItemResponse {
+  message: string;
 }
