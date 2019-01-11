@@ -23,7 +23,7 @@
     "@angular/router": "^5.2.0",
     "core-js": "^2.4.1",
     "rxjs": "^5.5.6",
-    "zone.js": "^0.8.19"
+    "zone.js": "^0.8.27"
   },
   "devDependencies": {
     "@angular/cli": "~1.7.4",
@@ -43,6 +43,8 @@
     "protractor": "~5.1.2",
     "ts-node": "~4.1.0",
     "tslint": "~5.9.1",
+    "rxjs": "^5.5.12",
+    "rxjs-compat": "^6.3.2",
     "typescript": "~2.5.3"
   }
 }

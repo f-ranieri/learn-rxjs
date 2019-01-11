@@ -1,54 +1,93 @@
 import { Component } from '@angular/core';
-import { Observable } from 'rxjs';
-import { delay } from 'rxjs/operators';
+import { Observable, pipe } from 'rxjs';
+import { delay, filter, map, reduce, concatMap, concat, catchError, flatMap } from 'rxjs/operators';
+import { forkJoin } from 'rxjs/observable/forkJoin';
+import { of } from 'rxjs/observable/of';
+import { mapTo } from 'rxjs/operator/mapTo';
 
 @Component({
-  selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+  selector: "app-root",
+  templateUrl: "./app.component.html",
+  styleUrls: ["./app.component.css"]
 })
 export class AppComponent {
   constructor() {}
 
   start() {
-    this.saveOrganizzatore().concatMap( success => this.saveOrganizzatoreAssociato(), err => console.log('first Failed'))
-      .subscribe(
-        success => {
-          console.log(success);
-        },
-        err => {
-          console.log(err);
-        }
-      );
+    this.saveOrganizzatore()
+      .pipe(
+        concatMap(
+          result => {
+            this.handleSuccessfulResult(result);
+            return this.saveOrganizzatoreAssociato();
+          }
+        ),
+        catchError(val => of(`I caught: ${val}`))
+        ,
+        concatMap(result => {
+          this.handleSuccessfulResult(result);
+          return this.saveDocuments();
+        }),
+        map(result => {
+          this.handleSuccessfulResults(result);
+        }),
+      )
+      .subscribe();
   }
 
   saveOrganizzatore(): Observable<string> {
     const i = Math.floor(Math.random() * Math.floor(10));
     if (i < 5) {
-      return Observable.of('FirstSave' + i).pipe(delay(1000));
+      return Observable.of("Organizzatore Salvato" + i).pipe(delay(500));
     } else {
-      return Observable.throw(new Error('oops!' + i));
+      return Observable.throw(new Error("oops!" + i));
     }
   }
 
+  handleSuccessfulResult(result?: string | {}) {
+    if (result) {
+      console.log(result);
+    }
+  }
+
+  handleSaveOrganizzatoreError(result: string) {
+    console.log(result);
+  }
+
+  handleSuccessfulResults(results: string[]) {
+    console.log(results);
+  }
+
   saveOrganizzatoreAssociato(): Observable<string> {
-    return Observable.create(observer => {
-      setTimeout(() => {
-        observer.next('Organizzatore Associato Salvato');
-        observer.complete();
-      }, 2000);
-    });
+    const i = Math.floor(Math.random() * Math.floor(10));
+    if (i < 5) {
+      return Observable.of("Organizzatore Associato Salvato" + i).pipe(
+        delay(500)
+      );
+    } else {
+      return Observable.throw(new Error("oops!" + i));
+    }
   }
 
-  saveDocumento(): Observable<string> {
-    return Observable.create(observer => {
-      setTimeout(() => {
-        observer.next('Documento Salvato');
-      }, 1000);
-    });
+  saveDocument(): Observable<string> {
+    const i = Math.floor(Math.random() * Math.floor(10));
+    if (i < 5) {
+      return Observable.of("Documento Salvato" + i).pipe(delay(i * 100));
+    } else {
+      return Observable.throw(new Error("oops!" + i));
+    }
   }
 
-  saveDocuments(): Observable<string>[] {
-    return [this.saveDocumento(), this.saveDocumento()];
+  saveDocuments(): Observable<string[]> {
+    return Observable.forkJoin([
+      this.saveDocument().catch(error => of(error)),
+      this.saveDocument().catch(error => of(error))
+    ]);
   }
+}
+
+class SavingContext {
+
+
+
 }
