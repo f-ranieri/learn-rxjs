@@ -1,9 +1,10 @@
 import { Component } from "@angular/core";
 import { Observable, pipe } from "rxjs";
-import { delay, filter, map, reduce, concatMap, concat, catchError, flatMap } from "rxjs/operators";
+import { delay, filter, map, reduce, concatMap, concat, catchError, flatMap, defaultIfEmpty, mergeMap } from "rxjs/operators";
 import { forkJoin } from "rxjs/observable/forkJoin";
 import { of } from "rxjs/observable/of";
 import { mapTo } from "rxjs/operator/mapTo";
+import { switchMap } from "rxjs/operator/switchMap";
 
 @Component({
   selector: "app-root",
@@ -17,6 +18,7 @@ export class AppComponent {
 
   constructor() {}
 
+
   start() {
     this.saveItem(this.saveItemRequest1)
       .catch(error => this.handleFailResult(this.saveItemRequest1, error))
@@ -29,12 +31,15 @@ export class AppComponent {
           this.handleSuccessfulResult(this.saveItemRequest2, result);
           return this.saveMultipleItems();
         }),
-        map(console.table)
+        map(result => console.table(result))
       )
       .subscribe();
   }
 
-  saveItem(request: SaveItemRequest): Observable<any> {
+  saveItem(request: SaveItemRequest): Observable<SaveItemResponse> {
+    if (request.id == "9") {
+      return Observable.of(new SaveItemResponse());
+    }
     if (request.id != "0") {
       const response = new SaveItemResponse();
       response.message = `${request.name} saved!`;
@@ -49,14 +54,14 @@ export class AppComponent {
     return Observable.empty();
   }
 
-  handleSuccessfulResult(request: SaveItemRequest, result: string | {}) {
+  handleSuccessfulResult(request: SaveItemRequest, result: string|{}) {
     console.log(`${request.id} result: `, result);
   }
 
   saveMultipleItems(): Observable<string[]> {
     return Observable.forkJoin([
       this.saveItem({ id: "3", name: "pear" }).catch(error => of(error)),
-      this.saveItem({ id: "4", name: "cherry" }).catch(error => of(error))
+      this.saveItem({ id: "9", name: "cherry" }).catch(error => of(error))
     ]);
   }
 }
